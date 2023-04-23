@@ -9,6 +9,18 @@ const usersRouter = require('./routes/users');
 
 const app = express();
 
+const perfMiddleware = (req, res, next) => {
+  const start = process.hrtime();
+
+  res.on('finish', () => {
+    const diff = process.hrtime(start);
+    const responseTimeInMs = diff[0] * 1000 + diff[1] / 1e6;
+    console.log(`Request ${req.method} ${req.originalUrl} took ${responseTimeInMs} ms`);
+  });
+
+  next();
+};
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
@@ -18,6 +30,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(perfMiddleware);
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
@@ -37,27 +50,7 @@ app.use((err, req, res, next) => {
     res.render('error');
 });
 
-const performanceMiddleware = (req, res, next) => {
-    const start = process.hrtime();
-  
-    res.on("finish", () => {
-      const elapsed = process.hrtime(start);
-      const durationMs = elapsed[0] * 1000 + elapsed[1] / 1e6;
-      console.log(`${req.method} ${req.originalUrl} ${durationMs.toFixed(3)} ms`);
-    });
-  
-    next();
-  };
-  
-  
-app.use(performanceMiddleware);
 
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
 
 app.listen(3000, () => {
   console.log('Server is running on port 3000');
