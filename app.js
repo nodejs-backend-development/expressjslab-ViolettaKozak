@@ -9,6 +9,18 @@ const usersRouter = require('./routes/users');
 
 const app = express();
 
+const perfMiddleware = (req, res, next) => {
+  const start = process.hrtime();
+
+  res.on('finish', () => {
+    const diff = process.hrtime(start);
+    const responseTimeInMs = diff[0] * 1000 + diff[1] / 1e6;
+    console.log(`Request ${req.method} ${req.originalUrl} took ${responseTimeInMs} ms`);
+  });
+
+  next();
+};
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
@@ -18,7 +30,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-
+app.use(perfMiddleware);
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
@@ -37,5 +49,12 @@ app.use((err, req, res, next) => {
     res.status(err.status || 500);
     res.render('error');
 });
+
+
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+
 
 module.exports = app;
